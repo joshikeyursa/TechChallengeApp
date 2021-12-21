@@ -1,7 +1,7 @@
 # Golang CircleCI 2.0 configuration file
 #
 # Check https://circleci.com/docs/2.0/language-go/ for more details
-version: 1
+version: 2.1
 
 orbs:
   aws-cli: circleci/aws-cli@2.0.6
@@ -182,6 +182,9 @@ jobs:
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
       - image: circleci/golang:1.16
     steps:
+      - checkout
+      - setup_remote_docker:
+          version: 19.03.13
       - aws-cli/setup:
           profile-name: default
       - run:
