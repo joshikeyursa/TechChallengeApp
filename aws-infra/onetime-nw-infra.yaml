@@ -1,0 +1,169 @@
+Parameters:
+  Environment:
+    Type: String
+    Default: Development
+    AllowedValues:
+      - Development
+      - Production
+      - Local
+      - Integration
+      - Test
+
+Conditions:
+  ExposeOverInternet: !Equals
+    - !Ref Environment
+    - Production
+
+Resources:
+
+  #Create new VPC (This VPC may be same can be used for future applications too)
+  GenericVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: "172.32.3.0/24"
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+
+      Tags:
+        - Key: Name
+          Value: ServianTechChallengeVPC
+
+  #Create and IGW to provide internet access to the VPC CAUTION: This is quite expensive and not under free-tier
+  GenericVPCIGW:
+    Condition: ExposeOverInternet
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: stack
+          Value: CustomApps
+
+  #Attach this IGW to VPC
+  VPCIGWAttachment:
+    Condition: ExposeOverInternet
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref GenericVPCIGW
+      VpcId: !Ref GenericVPC
+
+  #Add some private and public Subnets in VPC
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 172.32.3.0/28 #!Select [0, !Cidr [ !GetAtt GenericVPC.CidrBlock,1,8]]
+      VpcId: !Ref GenericVPC
+      AvailabilityZone: !Select
+          - 0
+          - !GetAZs
+            Ref: 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: servian-tech-challenge-pvt-sn-1
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 172.32.3.16/28 #!Select [0, !Cidr [ !GetAtt GenericVPC.CidrBlock,1,8]]
+      VpcId: !Ref GenericVPC
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: servian-tech-challenge-pvt-sn-2
+
+  PublicSubnet1:
+    Condition: ExposeOverInternet
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 172.32.3.32/28 #!Select [0, !Cidr [ !GetAtt GenericVPC.CidrBlock,1,8]]
+      VpcId: !Ref GenericVPC
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: servian-tech-challenge-pub-sn-1
+  PublicSubnet2:
+    Condition: ExposeOverInternet
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 172.32.3.48/28 #!Select [0, !Cidr [ !GetAtt GenericVPC.CidrBlock,1,8]]
+      VpcId: !Ref GenericVPC
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select
+        - 1
+        - !GetAZs
+          Ref: 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: servian-tech-challenge-pub-sn-2
+
+  #Now create RouteTable for newly created VPC
+  GenericRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref GenericVPC
+
+  #Associate Subnets to the RouteTable
+  PublicSubnetOneRouteAssociation:
+    Condition: ExposeOverInternet
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref GenericRouteTable
+      SubnetId: !Ref PublicSubnet1
+  PublicSubnetTwoRouteAssociation:
+    Condition: ExposeOverInternet
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref GenericRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  #Now map the traffic between Public Subnet and IGW
+  InternetGatewayRoute:
+    Condition: ExposeOverInternet
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref GenericRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref GenericVPCIGW
+
+Outputs:
+  TaskTrackerVPC:
+    Description: Generic APP VPC
+    Value: !Ref GenericVPC
+    Export:
+      Name: GenericVPC
+  TaskTrackerAZ1:
+    Description: TaskTracker App AZ for Subnet1
+    Value: !GetAtt PrivateSubnet1.AvailabilityZone
+    Export:
+      Name: TaskTrackerAZ1
+  TaskTrackerPrivateSubnet1:
+    Description: TaskTracker APP Private Subnet 1
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: PrivateSubnet1
+  TaskTrackerAZ2:
+    Description: TaskTracker App AZ for Subnet2
+    Value: !GetAtt PrivateSubnet2.AvailabilityZone
+    Export:
+      Name: TaskTrackerAZ2
+  TaskTrackerPrivateSubnet2:
+    Description: TaskTracker APP Private Subnet 2
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: PrivateSubnet2
+  TaskTrackerPublicSubnet1:
+    Condition: ExposeOverInternet
+    Description: TaskTracker APP Public Subnet 1
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: PublicSubnet1
+  TaskTrackerPublicSubnet2:
+    Condition: ExposeOverInternet
+    Description: TaskTracker APP Public Subnet 2
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: PublicSubnet2

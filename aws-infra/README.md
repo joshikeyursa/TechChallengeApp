@@ -1,0 +1,1 @@
+aws cloudformation deploy --template-file aws-infra/onetime-nw-infra.yaml --stack-name servian-tech-challenge-nw

@@ -176,7 +176,7 @@ jobs:
       - store_artifacts:
           path: output
 
-  deploy-on-aws:
+  build-aws-infra-nw:
     #executor: aws-cli/default
     docker: # run the steps with Docker
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
@@ -188,8 +188,28 @@ jobs:
       - aws-cli/setup:
           profile-name: default
       - run:
-          name: Test
-          command: aws s3 ls
+          name: Set Configuration Parameters in SSM Parameter Store
+          command: | 
+            aws ssm put-parameter --name $ENV_DB_USER_KEY --value $ENV_DB_USER_VALUE --type SecureString --overwrite
+            aws ssm put-parameter --name $ENV_DB_PWD_KEY --value $ENV_DB_PWD_VALUE --type SecureString --overwrite
+
+  deploye-docker-image:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 19.03.13
+      - aws-cli/setup:
+          profile-name: default
+      - run:
+        name: Push Servian Tech Challenge Docker image to ECR
+        command: |
+          aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+          docker pull bitnami/node-example:0.0.1
+          docker tag bitnami/node-example:0.0.1 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/techchallengeapp:latest
+          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/techchallengeapp:latest
+
 
 workflows:
   version: 2
@@ -204,6 +224,9 @@ workflows:
               only: master
             tags:
               ignore: /.*/
-      - deploy-on-aws:
+      - build-aws-infra:
           requires:
             - deploy
+          filters:
+            branches:
+              only: infra
