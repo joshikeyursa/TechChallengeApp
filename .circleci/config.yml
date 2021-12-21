@@ -176,7 +176,7 @@ jobs:
       - store_artifacts:
           path: output
 
-  build-and-deploy-on-aws-infra:
+  build-and-deploy-on-aws:
     #executor: aws-cli/default
     docker: # run the steps with Docker
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
@@ -203,13 +203,13 @@ jobs:
       - aws-cli/setup:
           profile-name: default
       - run:
-        name: Push Servian Tech Challenge Docker image to ECR
-        command: |
-          aws cloudformation deploy --template-file aws-infra/onetime-ecs-infra.yaml --stack-name servian-tech-challenge-ecs-infra
-          aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-          docker pull $APP_IMAGE_NAME
-          docker tag $APP_IMAGE_NAME $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/kjoshi/servian-techchallenge-app:latest
-          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/kjoshi/servian-techchallenge-app:latest
+          name: Push Servian Tech Challenge Docker image to ECR
+          command: |
+            aws cloudformation deploy --template-file aws-infra/onetime-ecs-infra.yaml --stack-name servian-tech-challenge-ecs-infra
+            aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+            docker pull bitnami/node-example:0.0.1
+            docker tag bitnami/node-example:0.0.1 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/techchallengeapp:latest
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/techchallengeapp:latest
 
 
 workflows:
@@ -225,7 +225,13 @@ workflows:
               only: master
             tags:
               ignore: /.*/
-      - build-and-deploy-on-aws-infra:
+      - create-aws-ecr-infra:
+          requires: 
+            - build
+          filters:
+            branches:
+              only: infra
+      - build-and-deploy-on-aws:
           requires:
             - create-aws-ecr-infra
           filters:
