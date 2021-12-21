@@ -1,0 +1,31 @@
+Parameters:
+  Environment:
+    Type: String
+    Default: Development
+    AllowedValues:
+      - Development
+      - Production
+      - Local
+      - Integration
+      - Test
+Resources:
+  TaskTrackerCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: ServianTechChallengeCluster
+
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: kjoshi/servian-techchallenge-app
+      ImageTagMutability: MUTABLE
+      Tags:
+        - Key: Environment
+          Value: !Ref 'Environment'
+
+Outputs:
+  TaskTrackerAppRepo:
+    Description: Location For the Tech Cahallenge App Repo where images will be uploaded
+    Value: !Ref ECRRepository
+    Export:
+      Name: ServianTechChallengeApp

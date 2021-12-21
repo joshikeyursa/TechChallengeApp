@@ -176,11 +176,11 @@ jobs:
       - store_artifacts:
           path: output
 
-  build-aws-infra-nw:
+  build-and-deploy-on-aws-infra:
     #executor: aws-cli/default
     docker: # run the steps with Docker
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
-      - image: circleci/golang:1.16
+      - image: cimg/base:stable
     steps:
       - checkout
       - setup_remote_docker:
@@ -193,7 +193,7 @@ jobs:
             aws ssm put-parameter --name $ENV_DB_USER_KEY --value $ENV_DB_USER_VALUE --type SecureString --overwrite
             aws ssm put-parameter --name $ENV_DB_PWD_KEY --value $ENV_DB_PWD_VALUE --type SecureString --overwrite
 
-  deploye-docker-image:
+  create-aws-ecr-infra:
     docker:
       - image: cimg/base:stable
     steps:
@@ -205,10 +205,11 @@ jobs:
       - run:
         name: Push Servian Tech Challenge Docker image to ECR
         command: |
+          aws cloudformation deploy --template-file aws-infra/onetime-ecs-infra.yaml --stack-name servian-tech-challenge-ecs-infra
           aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-          docker pull bitnami/node-example:0.0.1
-          docker tag bitnami/node-example:0.0.1 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/techchallengeapp:latest
-          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/techchallengeapp:latest
+          docker pull $APP_IMAGE_NAME
+          docker tag $APP_IMAGE_NAME $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/kjoshi/servian-techchallenge-app:latest
+          docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/kjoshi/servian-techchallenge-app:latest
 
 
 workflows:
@@ -224,9 +225,9 @@ workflows:
               only: master
             tags:
               ignore: /.*/
-      - build-aws-infra:
+      - build-and-deploy-on-aws-infra:
           requires:
-            - deploy
+            - create-aws-ecr-infra
           filters:
             branches:
               only: infra
