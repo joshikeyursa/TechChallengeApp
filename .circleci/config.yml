@@ -221,8 +221,8 @@ jobs:
           command: |
             aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
             docker pull bitnami/node-example:0.0.1
-            docker tag bitnami/node-example:0.0.1 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/techchallengeapp:$CIRCLE_BUILD_NUM
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/techchallengeapp:$CIRCLE_BUILD_NUM
+            docker tag bitnami/node-example:0.0.1 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/kjoshi/servian-techchallenge-app:$CIRCLE_BUILD_NUM
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/kjoshi/servian-techchallenge-app:$CIRCLE_BUILD_NUM
 
   create-task-definition:
     docker:
