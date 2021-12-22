@@ -203,14 +203,40 @@ jobs:
       - aws-cli/setup:
           profile-name: default
       - run:
-          name: Push Servian Tech Challenge Docker image to ECR
+          name: Create Basic ECS/R Infrastructucture
           command: |
-            aws cloudformation deploy --template-file aws-infra/onetime-ecs-infra.yaml --stack-name servian-tech-challenge-ecs-infra
+            aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --template-file aws-infra/onetime-ecs-infra-and-roles.yaml --stack-name servian-tech-challenge-ecs-infra-and-roles
+  
+  push-image-to-ecr:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 19.03.13
+      - aws-cli/setup:
+          profile-name: default
+      - run:
+          name: Push Docker image to ECR Repo
+          command: |
             aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
             docker pull bitnami/node-example:0.0.1
-            docker tag bitnami/node-example:0.0.1 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/techchallengeapp:latest
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/techchallengeapp:latest
+            docker tag bitnami/node-example:0.0.1 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/techchallengeapp:$CIRCLE_BUILD_NUM
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/techchallengeapp:$CIRCLE_BUILD_NUM
 
+  create-task-definition:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 19.03.13
+      - aws-cli/setup:
+          profile-name: default
+      - run:
+          name: Create and Execute task
+          command: |
+            aws cloudformation deploy --template-file aws-infra/
 
 workflows:
   version: 2
@@ -232,6 +258,12 @@ workflows:
             branches:
               only: infra
       - build-and-deploy-on-aws:
+          requires:
+            - create-aws-ecr-infra
+          filters:
+            branches:
+              only: infra
+      - push-image-to-ecr:
           requires:
             - create-aws-ecr-infra
           filters:

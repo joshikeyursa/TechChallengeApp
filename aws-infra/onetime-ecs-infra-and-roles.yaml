@@ -1,0 +1,93 @@
+Parameters:
+  Environment:
+    Type: String
+    Default: Development
+    AllowedValues:
+      - Development
+      - Production
+      - Local
+      - Integration
+      - Test
+Resources:
+  EcsInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ECSInstanceRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "ec2.amazonaws.com"
+            Action: "sts:AssumeRole"
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role'
+  
+  ECSInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EcsInstanceRole
+
+  ServianTechChallengeAppCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: ServianTechChallengeAppCluster
+
+  ECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: kjoshi/servian-techchallenge-app
+      ImageTagMutability: MUTABLE
+      Tags:
+        - Key: Environment
+          Value: !Ref 'Environment'
+  
+  #TODO: This need to use for RDS connectivity. Keeping it simple for initial draft.
+  ServianTechChallengeAppECSRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ServianTechChallengeECSRole
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: ServianTechChallengeDBPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "dynamodb:BatchGetItem"
+                  - "dynamodb:BatchWriteItem"
+                  - "dynamodb:PutItem"
+                  - "dynamodb:DescribeTable"
+                  - "dynamodb:DeleteItem"
+                  - "dynamodb:GetItem"
+                  - "dynamodb:Scan"
+                  - "dynamodb:Query"
+                  - "dynamodb:UpdateItem"
+                  - "dynamodb:DescribeTimeToLive"
+                  - "dynamodb:UpdateTable"
+                  - "dynamodb:GetRecords"
+                Resource: "arn:aws:dynamodb:*:105712406831:table/TaskList"
+
+Outputs:
+  EcsInstanceRole:
+    Description: ECS Instance Role ARN
+    Value: !GetAtt EcsInstanceRole.Arn
+    Export:
+      Name: EcsInstanceRoleArn
+  ECSInstanceProfile:
+    Description: ECS Instance Profile ARN
+    Value: !GetAtt ECSInstanceProfile.Arn
+    Export:
+      Name: ECSInstanceProfileArn
+  TaskTrackerAppRepo:
+    Description: Location For the Tech Cahallenge App Repo where images will be uploaded
+    Value: !Ref ECRRepository
+    Export:
+      Name: ServianTechChallengeApp
