@@ -1,0 +1,48 @@
+Parameters:
+  Environment:
+    Type: String
+    Default: Development
+    AllowedValues:
+      - Development
+      - Production
+      - Local
+      - Integration
+      - Test
+
+Mappings:
+  DBInstanceTypeMap:
+    Production:
+      InstanceType: db.m4.medium
+      DeleteAutoBckp: true
+      MultiAZ: true
+      StorageType: io1
+    Development:
+      InstanceType: db.t3.micro
+      DeleteAutoBckp: false
+      MultiAZ: false
+      StorageType: gp2
+
+Conditions:
+  IsProduction: !Equals
+    - !Ref Environment
+    - Production
+
+Resources:
+  ServianTechChallengeAppDBCluster:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 50
+      AllowMajorVersionUpgrade: true
+      AutoMinorVersionUpgrade: true
+      DBInstanceClass: !FindInMap [DBInstanceTypeMap,!Ref 'Environment',InstanceType]
+      DBName: app
+      DeleteAutomatedBackups: !FindInMap [DBInstanceTypeMap,!Ref 'Environment',DeleteAutoBckp]
+      Engine: postgres
+      EngineVersion: 12.8
+      MasterUsername: postgres #Use SSM 
+      MasterUserPassword: changeme #Use SSM
+      MaxAllocatedStorage: 100
+      MultiAZ: !FindInMap [DBInstanceTypeMap,!Ref 'Environment',MultiAZ]
+      PubliclyAccessible: true #Set it to false.
+      StorageType: !FindInMap [DBInstanceTypeMap,!Ref 'Environment',StorageType]
+

@@ -176,7 +176,7 @@ jobs:
       - store_artifacts:
           path: output
 
-  build-and-deploy-on-aws:
+  build-aws-infra:
     #executor: aws-cli/default
     docker: # run the steps with Docker
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
@@ -192,6 +192,9 @@ jobs:
           command: | 
             aws ssm put-parameter --name $ENV_DB_USER_KEY --value $ENV_DB_USER_VALUE --type String --overwrite
             aws ssm put-parameter --name $ENV_DB_PWD_KEY --value $ENV_DB_PWD_VALUE --type SecureString --overwrite
+            aws cloudformation deploy --template-file aws-infra/onetime-rds-infra.yaml --stack-name servian-tech-challenge-app-onetime-nw-infra --tags company=Servian
+
+          #aws cloudformation deploy --template-file aws-infra/onetime-rds-infra.yaml --stack-name servian-tech-challenge-rds-infra
 
   create-aws-ecr-infra:
     docker:
@@ -205,9 +208,9 @@ jobs:
       - run:
           name: Create Basic ECS/R Infrastructucture
           command: |
-            aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --template-file aws-infra/onetime-ecs-infra-and-roles.yaml --stack-name servian-tech-challenge-ecs-infra-and-roles
+            aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --template-file aws-infra/onetime-ecs-infra-and-roles.yaml --stack-name servian-tech-challenge-ecs-infra-and-roles  --tags company=Servian
 
-  push-image-to-ecr:
+  push-image-to-ecr-and-deploy-on-ecs:
     docker:
       - image: cimg/base:stable
     steps:
@@ -219,6 +222,7 @@ jobs:
       - run:
           name: Push Docker image to ECR Repo
           command: |
+            ls -lart
             aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
             docker pull servian/techchallengeapp
             docker tag servian/techchallengeapp $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/kjoshi/servian-techchallenge-app:$CIRCLE_BUILD_NUM
@@ -257,13 +261,13 @@ workflows:
           filters:
             branches:
               only: infra
-      - build-and-deploy-on-aws:
+      - build-aws-infra:
           requires:
             - create-aws-ecr-infra
           filters:
             branches:
               only: infra
-      - push-image-to-ecr:
+      - push-image-to-ecr-and-deploy-on-ecs:
           requires:
             - create-aws-ecr-infra
           filters:
