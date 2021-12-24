@@ -19,7 +19,7 @@ Mappings:
     Production:
       "InstanceType": "m4.large" #Put an appropriate instance type once ready for prod.
     Development:
-      "InstanceType": "t3.micro"
+      "InstanceType": "t3.small"
   InstanceMinMax:
     Production:
       MinInstance: 2
@@ -49,7 +49,7 @@ Resources:
           MarketType: spot
           SpotOptions:
             SpotInstanceType: one-time
-            MaxPrice: 0.0045
+            MaxPrice: 0.008
             InstanceInterruptionBehavior: terminate
         SecurityGroupIds:
           - !ImportValue ServianTechChallengAppSG
