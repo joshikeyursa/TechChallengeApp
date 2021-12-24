@@ -228,6 +228,7 @@ jobs:
             docker pull servian/techchallengeapp
             docker tag servian/techchallengeapp $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/kjoshi/servian-techchallenge-app:$CIRCLE_BUILD_NUM
             docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/kjoshi/servian-techchallenge-app:$CIRCLE_BUILD_NUM
+            aws cloudformation deploy --ftemplate-file aws-infra/ecs-task-def.yaml --stack-name servian-techchallenge-app-ecs-task-def --parameter-overrides ImageId=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/kjoshi/servian-techchallenge-app:$CIRCLE_BUILD_NUM
 
   create-task-definition:
     docker:

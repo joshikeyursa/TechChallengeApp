@@ -1,0 +1,66 @@
+Parameters:
+  Environment:
+    Type: String
+    Default: Development
+    AllowedValues:
+      - Development
+      - Production
+      - Local
+      - Integration
+      - Test
+  ImageId:
+    Type: String
+    Description: Image to be used for creating TaskDef
+
+Mappings:
+  ContainerSpecsMap:
+    Development:
+      Memory: 0.5GB
+      CPU: 512
+    Production:
+      Memory: 1GB
+      CPU: 2048
+
+Resources:
+  ServianTechChallengeAppTaskLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: "/ecs/ServiceTechChallengeAppTask"
+  
+  ServianTechChallengeAppTaskDef:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: "/ecs/TaskTrackerECSTask"
+  
+  ServianTechChallengeAppTaskDef:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Memory: !FindInMap [ ContainerSpecsMap,!Ref 'Environment',Memory ]
+      Cpu: !FindInMap [ ContainerSpecsMap,!Ref 'Environment',CPU ]
+      TaskRoleArn: !ImportValue TaskTrackerECSRoleArn
+      NetworkMode: host
+      ContainerDefinitions:
+        - Name: ServianTechChallengeAppContainer
+          Image: !Ref ImageId
+          PortMappings:
+            - ContainerPort: 3000
+          Environment:
+            - Name: VTT_LISTENHOST
+              Value: 0.0.0.0
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref TargetTrackerECSTaskLogGroup
+              awslogs-stream-prefix: ecs
+
+  ServianTechChallengeAppService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: ServianTechChallengeAppService
+      Cluster: ServianTechChallengeAppCluster
+      TaskDefinition: !Ref ServianTechChallengeAppTaskDef
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DesiredCount: 1
