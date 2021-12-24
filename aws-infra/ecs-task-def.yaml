@@ -51,7 +51,7 @@ Resources:
             LogDriver: awslogs
             Options:
               awslogs-region: !Ref AWS::Region
-              awslogs-group: !Ref TargetTrackerECSTaskLogGroup
+              awslogs-group: !Ref ServianTechChallengeAppTaskLogGroup
               awslogs-stream-prefix: ecs
 
   ServianTechChallengeAppService:
