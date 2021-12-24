@@ -37,7 +37,7 @@ Resources:
     Properties:
       Memory: !FindInMap [ ContainerSpecsMap,!Ref 'Environment',Memory ]
       Cpu: !FindInMap [ ContainerSpecsMap,!Ref 'Environment',CPU ]
-      TaskRoleArn: !ImportValue TaskTrackerECSRoleArn
+      TaskRoleArn: !ImportValue EcsInstanceRoleArn
       NetworkMode: host
       ContainerDefinitions:
         - Name: ServianTechChallengeAppContainer
