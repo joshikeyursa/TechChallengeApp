@@ -42,11 +42,15 @@ Resources:
       ContainerDefinitions:
         - Name: ServianTechChallengeAppContainer
           Image: !Ref ImageId
+          Command: 
+            - serve
           PortMappings:
             - ContainerPort: 3000
           Environment:
             - Name: VTT_LISTENHOST
               Value: 0.0.0.0
+            - Name: VTT_DBHOST
+              Value: !ImportValue ServianTechChallengeAppDBClusterArn
           LogConfiguration:
             LogDriver: awslogs
             Options:

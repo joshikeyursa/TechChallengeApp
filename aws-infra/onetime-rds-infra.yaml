@@ -46,3 +46,10 @@ Resources:
       PubliclyAccessible: true #Set it to false.
       StorageType: !FindInMap [DBInstanceTypeMap,!Ref 'Environment',StorageType]
 
+Outputs:
+  DBInstanceArn:
+    Description: DB Instance ARN
+    Value: !GetAtt ServianTechChallengeAppDBCluster.Endpoint.Address
+    Export:
+      Name: ServianTechChallengeAppDBClusterEndpoint
+
