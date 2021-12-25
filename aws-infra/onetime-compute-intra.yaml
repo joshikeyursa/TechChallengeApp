@@ -42,6 +42,59 @@ Conditions:
 Resources:
   ServianTechChallengeAppECSLT:
     Type: AWS::EC2::LaunchTemplate
+    Metadata:
+      Comment: Install a simple application
+      AWS::CloudFormation::Init:
+        config:
+          files:
+            /etc/cfn/cfn-hup.conf:
+              content:
+                Fn::Join:
+                  - ''
+                  - - |
+                      [main]
+                    - stack=
+                    - Ref: AWS::StackId
+                    - |+
+
+                    - region=
+                    - Ref: AWS::Region
+                    - |+
+
+              mode: '000400'
+              owner: root
+              group: root
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content:
+                Fn::Join:
+                  - ''
+                  - - |
+                      [cfn-auto-reloader-hook]
+                    - |
+                      triggers=post.update
+                    - >
+                      path=Resources.ServianTechChallengeAppECSLT.Metadata.AWS::CloudFormation::Init
+                    - 'action=/opt/aws/bin/cfn-init -v '
+                    - '         --stack '
+                    - Ref: AWS::StackName
+                    - '         --resource ServianTechChallengeAppECSLT '
+                    - '         --region '
+                    - Ref: AWS::Region
+                    - |+
+
+                    - |
+                      runas=root
+          services:
+            sysvinit:
+              httpd:
+                enabled: 'true'
+                ensureRunning: 'true'
+              cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files:
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
     Properties:
       LaunchTemplateName: ServianTechChallengeAppLauchTemplate
       LaunchTemplateData:
@@ -61,10 +114,19 @@ Resources:
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash -xe
+            yum install -y httpd
+            yum install -y aws-cfn-bootstrap
             yum update -y
             echo ECS_CLUSTER=ServianTechChallengeAppCluster >> /etc/ecs/ecs.config
             echo ECS_BACKEND_HOST= >> /etc/ecs/ecs.config
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource ServianTechChallengeAppECSLT --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ServianTechChallengeAppASG --region ${AWS::Region}
+
   ServianTechChallengeAppASG:
+    CreationPolicy:
+        ResourceSignal:
+          Count: 1
+          Timeout: PT10M
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       AutoScalingGroupName: ServianTechChallengeAppASG
