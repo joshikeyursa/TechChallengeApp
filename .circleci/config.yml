@@ -176,7 +176,7 @@ jobs:
       - store_artifacts:
           path: output
 
-  create-aws-support-infra:
+  create-aws-compute-infra:
     #executor: aws-cli/default
     docker: # run the steps with Docker
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
@@ -188,11 +188,8 @@ jobs:
       - aws-cli/setup:
           profile-name: default
       - run:
-          name: Set Configuration Parameters in SSM Parameter Store
+          name: Create Network components
           command: | 
-            aws ssm put-parameter --name $ENV_DB_USER_KEY --value $ENV_DB_USER_VALUE --type String --overwrite
-            aws ssm put-parameter --name $ENV_DB_PWD_KEY --value $ENV_DB_PWD_VALUE --type SecureString --overwrite
-            aws cloudformation deploy --template-file aws-infra/onetime-nw-infra.yaml --stack-name servian-tech-challenge-app-onetime-nw-infra --tags company=Servian
             aws cloudformation deploy --template-file aws-infra/onetime-compute-intra.yaml --stack-name servian-tech-challenge-app-onetime-copute-infra --tags company=Servian
 
   create-aws-rds-infra:
@@ -207,9 +204,11 @@ jobs:
       - run:
           name: Create Basic RDS Infrastructucture
           command: |
+            aws ssm put-parameter --name $ENV_DB_USER_KEY --value $ENV_DB_USER_VALUE --type String --overwrite
+            aws ssm put-parameter --name $ENV_DB_PWD_KEY --value $ENV_DB_PWD_VALUE --type SecureString --overwrite
             aws cloudformation deploy --template-file aws-infra/onetime-rds-infra.yaml --stack-name servian-tech-challenge-rds-infra
             
-  create-aws-ecr-infra:
+  create-aws-support-infra:
     docker:
       - image: cimg/base:stable
     steps:
@@ -221,6 +220,8 @@ jobs:
       - run:
           name: Create Basic ECS/R Infrastructucture
           command: |
+
+            aws cloudformation deploy --template-file aws-infra/onetime-nw-infra.yaml --stack-name servian-tech-challenge-app-onetime-nw-infra --tags company=Servian
             aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --template-file aws-infra/onetime-ecs-infra-and-roles.yaml --stack-name servian-tech-challenge-ecs-infra-and-roles  --tags company=Servian
 
   push-image-to-ecr-and-deploy-on-ecs:
@@ -269,27 +270,30 @@ workflows:
               only: master
             tags:
               ignore: /.*/
-      - create-aws-rds-infra:
-          filters:
-            branches:
-              only: infra
-      - create-aws-ecr-infra:
-          requires: 
-            - build
-          filters:
-            branches:
-              only: infra
       - create-aws-support-infra:
           requires:
-            - create-aws-ecr-infra
+            - build # Eventually build will take care of creating new impage so added dependency
+          filters:
+            branches:
+              only: infra
+      - create-aws-compute-infra:
+          requires: 
+            - create-aws-support-infra
+          filters:
+            branches:
+              only: infra
+      - create-aws-rds-infra:
+          requires:
+            - create-aws-support-infra
           filters:
             branches:
               only: infra
       
+      
       - push-image-to-ecr-and-deploy-on-ecs:
           requires:
             - create-aws-rds-infra
-            - create-aws-support-infra
+            - create-aws-compute-infra
           filters:
             branches:
               only: infra
