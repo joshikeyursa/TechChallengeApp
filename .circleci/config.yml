@@ -176,7 +176,7 @@ jobs:
       - store_artifacts:
           path: output
 
-  build-aws-support-infra:
+  create-aws-support-infra:
     #executor: aws-cli/default
     docker: # run the steps with Docker
       # CircleCI Go images available at: https://hub.docker.com/r/circleci/golang/
@@ -209,7 +209,6 @@ jobs:
           command: |
             aws cloudformation deploy --template-file aws-infra/onetime-rds-infra.yaml --stack-name servian-tech-challenge-rds-infra
             
-
   create-aws-ecr-infra:
     docker:
       - image: cimg/base:stable
@@ -270,28 +269,27 @@ workflows:
               only: master
             tags:
               ignore: /.*/
+      - create-aws-rds-infra:
+          filters:
+            branches:
+              only: infra
       - create-aws-ecr-infra:
           requires: 
             - build
           filters:
             branches:
               only: infra
-      - build-aws-support-infra:
+      - create-aws-support-infra:
           requires:
-            - build
-          filters:
-            branches:
-              only: create-aws-ecr-infra
-      - create-aws-rds-infra:
-          requires:
-            - build
+            - create-aws-ecr-infra
           filters:
             branches:
               only: infra
+      
       - push-image-to-ecr-and-deploy-on-ecs:
           requires:
-            - build-aws-support-infra
             - create-aws-rds-infra
+            - create-aws-support-infra
           filters:
             branches:
               only: infra
