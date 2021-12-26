@@ -11,6 +11,7 @@ Parameters:
   ImageId:
     Type: String
     Description: Image to be used for creating TaskDef
+    Default: servian/techchallengeapp
 
 Mappings:
   ContainerSpecsMap:
@@ -41,7 +42,8 @@ Resources:
       NetworkMode: host
       ContainerDefinitions:
         - Name: ServianTechChallengeAppContainer
-          Image: !Ref ImageId
+          #Image: !Ref ImageId 
+          Image: servian/techchallengeapp #Since we don't need any customization.
           Command: 
             - serve
           PortMappings:
