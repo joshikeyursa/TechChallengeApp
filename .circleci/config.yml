@@ -237,12 +237,7 @@ jobs:
       - run:
           name: Push Docker image to ECR Repo
           command: |
-            ls -lart
-            aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-            docker pull servian/techchallengeapp
-            docker tag servian/techchallengeapp $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/kjoshi/servian-techchallenge-app:$CIRCLE_BUILD_NUM
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/kjoshi/servian-techchallenge-app:$CIRCLE_BUILD_NUM
-            aws cloudformation deploy --template-file aws-infra/ecs-task-def.yaml --stack-name servian-techchallenge-app-ecs-task-def --parameter-overrides ImageId=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/kjoshi/servian-techchallenge-app:$CIRCLE_BUILD_NUM
+            aws cloudformation deploy --template-file aws-infra/ecs-task-def.yaml --stack-name servian-techchallenge-app-ecs-task-def --parameter-overrides 
 
   create-task-definition:
     docker:
