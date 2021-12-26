@@ -237,7 +237,7 @@ jobs:
       - run:
           name: Push Docker image to ECR Repo
           command: |
-            aws cloudformation deploy --template-file aws-infra/ecs-task-def.yaml --stack-name servian-techchallenge-app-ecs-task-def --parameter-overrides 
+            aws cloudformation deploy --template-file aws-infra/ecs-task-def.yaml --stack-name servian-techchallenge-app-ecs-task-def
 
   create-task-definition:
     docker:
