@@ -202,6 +202,7 @@ jobs:
       - aws-cli/setup:
           profile-name: default
       - run:
+          no_output_timeout: 30m
           name: Create Basic RDS Infrastructucture
           command: |
             aws ssm put-parameter --name $ENV_DB_USER_KEY --value $ENV_DB_USER_VALUE --type String --overwrite

@@ -17,7 +17,7 @@ Mappings:
       MultiAZ: true
       StorageType: io1
     Development:
-      InstanceType: db.t3.micro
+      InstanceType: db.t3.small
       DeleteAutoBckp: false
       MultiAZ: false
       StorageType: gp2
@@ -28,6 +28,23 @@ Conditions:
     - Production
 
 Resources:
+  ServianTechChallengeAppRDSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Servian Tech Challenge App Group
+      DBSubnetGroupName: ServianTechChallengeAppDBGroup
+      SubnetIds:
+        - !ImportValue ServianTechChallengeAppPubSN1
+        - !ImportValue ServianTechChallengeAppPubSN2
+
+  ServianTechChallengeAppDBGroup:
+    Type: AWS::RDS::DBSecurityGroup
+    Properties:
+      DBSecurityGroupIngress: 
+        EC2SecurityGroupId:  !ImportValue ServianTechChallengAppSG
+      EC2VpcId: !ImportValue ServianTechChallengAppVPC
+      GroupDescription: SG to enable communication from ECS containers to RDS
+
   ServianTechChallengeAppDBCluster:
     Type: AWS::RDS::DBInstance
     Properties:
@@ -45,6 +62,10 @@ Resources:
       MultiAZ: !FindInMap [DBInstanceTypeMap,!Ref 'Environment',MultiAZ]
       PubliclyAccessible: true #Set it to false.
       StorageType: !FindInMap [DBInstanceTypeMap,!Ref 'Environment',StorageType]
+      DBSubnetGroupName: !Ref ServianTechChallengeAppRDSubnetGroup
+      DBSecurityGroups: 
+        - !Ref ServianTechChallengeAppDBGroup
+        
 
 Outputs:
   DBInstanceArn:
