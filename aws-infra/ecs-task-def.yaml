@@ -29,13 +29,9 @@ Resources:
       LogGroupName: "/ecs/ServiceTechChallengeAppTask"
   
   ServianTechChallengeAppTaskDef:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: "/ecs/TaskTrackerECSTask"
-  
-  ServianTechChallengeAppTaskDef:
     Type: AWS::ECS::TaskDefinition
     Properties:
+      Family: ServianTechChallengeAppTaskDef
       Memory: !FindInMap [ ContainerSpecsMap,!Ref 'Environment',Memory ]
       Cpu: !FindInMap [ ContainerSpecsMap,!Ref 'Environment',CPU ]
       #TaskRoleArn: !ImportValue EcsInstanceRoleArn
@@ -48,6 +44,34 @@ Resources:
             - serve
           PortMappings:
             - ContainerPort: 3000
+          Environment:
+            - Name: VTT_LISTENHOST
+              Value: 0.0.0.0
+            - Name: VTT_DBHOST
+              Value: !ImportValue ServianTechChallengeAppDBClusterEndpoint
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref ServianTechChallengeAppTaskLogGroup
+              awslogs-stream-prefix: ecs
+
+  #This is not the best way to initialize DB.
+  ServianTechChallengeAppTaskDBDef:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: ServianTechChallengeAppTaskDBDef
+      Memory: !FindInMap [ ContainerSpecsMap,!Ref 'Environment',Memory ]
+      Cpu: !FindInMap [ ContainerSpecsMap,!Ref 'Environment',CPU ]
+      #TaskRoleArn: !ImportValue EcsInstanceRoleArn
+      NetworkMode: host
+      ContainerDefinitions:
+        - Name: ServianTechChallengeAppContainer
+          #Image: !Ref ImageId 
+          Image: servian/techchallengeapp #Since we don't need any customization.
+          Command: 
+            - updatedb
+            - "-s"
           Environment:
             - Name: VTT_LISTENHOST
               Value: 0.0.0.0

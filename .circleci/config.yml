@@ -208,7 +208,8 @@ jobs:
             aws ssm put-parameter --name $ENV_DB_USER_KEY --value $ENV_DB_USER_VALUE --type String --overwrite
             aws ssm put-parameter --name $ENV_DB_PWD_KEY --value $ENV_DB_PWD_VALUE --type SecureString --overwrite
             aws cloudformation deploy --template-file aws-infra/onetime-rds-infra.yaml --stack-name servian-tech-challenge-rds-infra
-            
+            aws ecs run-task --cluster ServianTechChallengeAppCluster --launch-type EC2 --task-definition ServianTechChallengeAppTaskDBDef
+
   create-aws-support-infra:
     docker:
       - image: cimg/base:stable
