@@ -208,7 +208,6 @@ jobs:
             aws ssm put-parameter --name $ENV_DB_USER_KEY --value $ENV_DB_USER_VALUE --type String --overwrite
             aws ssm put-parameter --name $ENV_DB_PWD_KEY --value $ENV_DB_PWD_VALUE --type SecureString --overwrite
             aws cloudformation deploy --template-file aws-infra/onetime-rds-infra.yaml --stack-name servian-tech-challenge-rds-infra
-            aws ecs run-task --cluster ServianTechChallengeAppCluster --launch-type EC2 --task-definition ServianTechChallengeAppTaskDBDef
 
   create-aws-support-infra:
     docker:
@@ -226,7 +225,7 @@ jobs:
             aws cloudformation deploy --template-file aws-infra/onetime-nw-infra.yaml --stack-name servian-tech-challenge-app-onetime-nw-infra --tags company=Servian
             aws cloudformation deploy --capabilities CAPABILITY_NAMED_IAM --template-file aws-infra/onetime-ecs-infra-and-roles.yaml --stack-name servian-tech-challenge-ecs-infra-and-roles  --tags company=Servian
 
-  push-image-to-ecr-and-deploy-on-ecs:
+  deploy-impage-on-ecs:
     docker:
       - image: cimg/base:stable
     steps:
@@ -239,20 +238,7 @@ jobs:
           name: Push Docker image to ECR Repo
           command: |
             aws cloudformation deploy --template-file aws-infra/ecs-task-def.yaml --stack-name servian-techchallenge-app-ecs-task-def
-
-  create-task-definition:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - setup_remote_docker:
-          version: 19.03.13
-      - aws-cli/setup:
-          profile-name: default
-      - run:
-          name: Create and Execute task
-          command: |
-            aws cloudformation deploy --template-file aws-infra/
+            aws ecs run-task --cluster ServianTechChallengeAppCluster --launch-type EC2 --task-definition ServianTechChallengeAppTaskDBDef
 
 workflows:
   version: 2
@@ -284,10 +270,8 @@ workflows:
             - create-aws-support-infra
           filters:
             branches:
-              only: infra
-      
-      
-      - push-image-to-ecr-and-deploy-on-ecs:
+              only: infra            
+      - deploy-impage-on-ecs:
           requires:
             - create-aws-rds-infra
             - create-aws-compute-infra
