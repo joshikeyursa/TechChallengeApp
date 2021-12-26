@@ -50,7 +50,7 @@ Resources:
             - Name: VTT_LISTENHOST
               Value: 0.0.0.0
             - Name: VTT_DBHOST
-              Value: !ImportValue ServianTechChallengeAppDBClusterArn
+              Value: !ImportValue ServianTechChallengeAppDBClusterEndpoint
           LogConfiguration:
             LogDriver: awslogs
             Options:
